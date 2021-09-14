@@ -23,7 +23,7 @@ def dropDatabase(databaseName):
 
     shutil.rmtree(path)
 
-    return print("Database", databaseName, "deleted.")
+    return print("Database", databaseName, "dropped.")
 
 def useDatabase(databaseName):
     global selectedDatabase
@@ -79,12 +79,10 @@ def USE(commandArray):
 
     return useDatabase(commandArray[1])
 
-while True:
-    command = input('--> ')
+def validateCommand(command):
+    if command[-1] != ';': return False
 
-    if command == '.EXIT':
-        print("All done.")
-        break
+    command = command.replace(';', '')
 
     commandArray = command.split()
 
@@ -92,8 +90,21 @@ while True:
 
     validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER']
 
-    if validFunctionName == False:
+    if not validFunctionName: return False
+
+    return commandArray
+
+while True:
+    command = input('--> ')
+
+    if command == '.EXIT':
+        print("All done.")
+        break
+
+    commandArray = validateCommand(command)
+
+    if not commandArray:
         print("Invalid command.")
         continue
 
-    globals()[functionName](commandArray)
+    globals()[commandArray[0]](commandArray)

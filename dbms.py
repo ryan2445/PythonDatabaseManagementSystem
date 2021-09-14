@@ -1,40 +1,83 @@
 import os
+import shutil
+
+selectedDatabase = None
 
 def createDatabase(databaseName):
     path = os.getcwd()
 
     path += '/' + databaseName
 
-    try:
-        os.mkdir(path)
-    except:
-        print("Database name already exists.")
-        return
+    if os.path.exists(path): return print("Database", databaseName, "already exists")
 
-    print("Database", databaseName, "created.")
+    os.mkdir(path)
+
+    return print("Database", databaseName, "created.")
 
 def dropDatabase(databaseName):
     path = os.getcwd()
 
     path += '/' + databaseName
 
-    try:
-        os.rmdir(path)
-    except:
-        print("Database does not exist.")
-        return
+    if not os.path.exists(path): return print("Database", databaseName, "does not exist")
 
-    print("Database", databaseName, "deleted.")
+    shutil.rmtree(path)
+
+    return print("Database", databaseName, "deleted.")
+
+def useDatabase(databaseName):
+    global selectedDatabase
+    
+    selectedDatabase = databaseName
+
+    return print("Using database", selectedDatabase)
+
+def createTable(tableName):
+    if not selectedDatabase: return print("No database selected.")
+
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    file = open(path, 'w')
+
+    file.close()
+
+    return print("Created table", tableName)
+
+def dropTable(tableName):
+    if not selectedDatabase: return print("No database selected.")
+
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    if not os.path.exists(path): return print("Table", tableName, "does not exist.")
+
+    os.remove(path)
+
+    return print("Dropped table", tableName)
 
 def CREATE(commandArray):
-    if commandArray[1] == 'DATABASE' and len(commandArray) == 3: createDatabase(commandArray[2])
-    elif commandArray[1] == 'TABLE' and len(commandArray) == 3: print("put create table function here")
-    else: print("Invalid command.")
+    if len(commandArray) != 3: return print("Invalid command.")
+
+    if commandArray[1] == 'DATABASE': return createDatabase(commandArray[2])
+
+    if commandArray[1] == 'TABLE': return createTable(commandArray[2])
+
+    return print("Invalid command.")
 
 def DROP(commandArray):
-    if commandArray[1] == 'DATABASE' and len(commandArray) == 3: dropDatabase(commandArray[2])
-    elif commandArray[1] == 'TABLE' and len(commandArray) == 3: print("put create table function here")
-    else: print("Invalid command.")
+    if len(commandArray) != 3: return print("Invalid command.")
+
+    if commandArray[1] == 'DATABASE': return dropDatabase(commandArray[2])
+
+    elif commandArray[1] == 'TABLE': return dropTable(commandArray[2])
+
+    return print("Invalid command.")
+
+def USE(commandArray):
+    if len(commandArray) != 2: return print("Invalid command.")
+    
+    if commandArray[1] not in os.listdir(): return print(commandArray[1], "is not a database.")
+
+    return useDatabase(commandArray[1])
 
 while True:
     command = input('--> ')

@@ -32,12 +32,32 @@ def useDatabase(databaseName):
 
     return print("Using database", selectedDatabase)
 
-def createTable(tableName):
+def createTable(commandArray):
     if not selectedDatabase: return print("No database selected.")
+
+    tableName = commandArray[2]
+
+    columns = ' '.join(commandArray[3 : len(commandArray)])
+
+    columns = columns[1 : -1]
+
+    columns = columns.split(',')
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    if os.path.exists(path): return print("Table", tableName, "already exists")
+
     file = open(path, 'w')
+
+    line = ""
+
+    for i in range(len(columns)):
+        column = columns[i]
+        if column[0] == " ": column = column[1 : ]
+        line += column
+        if not i == len(columns) - 1: line += " | "
+
+    file.write(line)
 
     file.close()
 
@@ -55,11 +75,11 @@ def dropTable(tableName):
     return print("Dropped table", tableName)
 
 def CREATE(commandArray):
-    if len(commandArray) != 3: return print("Invalid command.")
+    if len(commandArray) < 3: return print("Invalid command.")
 
     if commandArray[1] == 'DATABASE': return createDatabase(commandArray[2])
 
-    if commandArray[1] == 'TABLE': return createTable(commandArray[2])
+    if len(commandArray) > 4 and commandArray[1] == 'TABLE': return createTable(commandArray)
 
     return print("Invalid command.")
 

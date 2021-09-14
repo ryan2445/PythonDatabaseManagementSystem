@@ -36,10 +36,12 @@ def DROP(commandArray):
     elif commandArray[1] == 'TABLE' and len(commandArray) == 3: print("put create table function here")
     else: print("Invalid command.")
 
-command = None
-
-while(command != ".EXIT"):
+while True:
     command = input('--> ')
+
+    if command == '.EXIT':
+        print("All done.")
+        break
 
     commandArray = command.split()
 

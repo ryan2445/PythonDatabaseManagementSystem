@@ -8,22 +8,26 @@ def createDatabase(databaseName):
 
     path += '/' + databaseName
 
-    if os.path.exists(path): return print("Database", databaseName, "already exists")
+    if os.path.exists(path): return print("!Failed to create database", databaseName, "because it already exists.")
 
     os.mkdir(path)
 
     return print("Database", databaseName, "created.")
 
 def dropDatabase(databaseName):
+    global selectedDatabase
+
     path = os.getcwd()
 
     path += '/' + databaseName
 
-    if not os.path.exists(path): return print("Database", databaseName, "does not exist")
+    if not os.path.exists(path): return print("!Failed to delete database", databaseName, "because it does not exist")
 
     shutil.rmtree(path)
 
-    return print("Database", databaseName, "dropped.")
+    if selectedDatabase == databaseName: selectedDatabase = None
+
+    return print("Database", databaseName, "deleted.")
 
 def useDatabase(databaseName):
     global selectedDatabase
@@ -45,7 +49,7 @@ def createTable(commandArray):
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
-    if os.path.exists(path): return print("Table", tableName, "already exists")
+    if os.path.exists(path): return print("!Failed to create table", tableName, "because it already exists.")
 
     file = open(path, 'w')
 
@@ -64,18 +68,18 @@ def createTable(commandArray):
 
     file.close()
 
-    return print("Created table", tableName)
+    return print("Table", tableName, "created.")
 
 def dropTable(tableName):
     if not selectedDatabase: return print("No database selected.")
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
-    if not os.path.exists(path): return print("Table", tableName, "does not exist.")
+    if not os.path.exists(path): return print("!Failed to delete table", tableName, "because it does not exist.")
 
     os.remove(path)
 
-    return print("Dropped table", tableName)
+    return print("Table", tableName, "deleted.")
 
 def selectFromTable(commandArray):
     if commandArray[1] == "*": return selectAllFromTable(commandArray)
@@ -89,7 +93,7 @@ def selectAllFromTable(commandArray):
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
-    if not os.path.exists(path): return print("That table does not exist.")
+    if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
 
     file = open(path, 'r')
 
@@ -98,6 +102,30 @@ def selectAllFromTable(commandArray):
     for line in allLines: print(line)
 
     return file.close()
+
+def alterTable(commandArray):
+    tableName = commandArray[2]
+
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    if not os.path.exists(path): return print("That table does not exist.")
+
+    if commandArray[3] == "ADD": return alterTableAdd(tableName, path, commandArray[4 : len(commandArray)])
+
+    return print("Invalid command.")
+
+def alterTableAdd(tableName, path, column):
+    column = ' '.join(column)
+
+    addition = " | " + column
+
+    file = open(path, 'a')
+
+    file.write(addition)
+
+    file.close()
+
+    return print("Table", tableName, "modified.")
 
 def CREATE(commandArray):
     if len(commandArray) < 3: return print("Invalid command.")
@@ -133,6 +161,8 @@ def SELECT(commandArray):
 
 def ALTER(commandArray):
     if len(commandArray) < 6: return print("Invalid command.")
+
+    if commandArray[1] == 'TABLE': return alterTable(commandArray)
 
 def validateCommand(command):
     if command[-1] != ';': return False

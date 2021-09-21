@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 selectedDatabase = None
 
@@ -179,8 +180,12 @@ def validateCommand(command):
 
     return commandArray
 
-while True:
-    command = input('--> ')
+for command in sys.stdin:
+
+    command = command.strip()
+
+    if not command or command[0] == '-':
+        continue
 
     if command == '.EXIT':
         print("All done.")

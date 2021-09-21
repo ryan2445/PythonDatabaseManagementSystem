@@ -105,6 +105,8 @@ def selectAllFromTable(commandArray):
     return file.close()
 
 def alterTable(commandArray):
+    if not selectedDatabase: return print("No database selected.")
+
     tableName = commandArray[2]
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'

@@ -4,6 +4,13 @@ import sys
 
 selectedDatabase = None
 
+"""
+createDatabase(databaseName)
+
+- Constructs the path to the database by appending the name of the database to the current working directory
+- Creates the database directory
+
+"""
 def createDatabase(databaseName):
     path = os.getcwd()
 
@@ -15,6 +22,14 @@ def createDatabase(databaseName):
 
     return print("Database", databaseName, "created.")
 
+
+"""
+dropDatabase(databaseName)
+
+- Constructs the path to the database by appending the name of the database to the current working directory
+- Deletes the directory
+
+"""
 def dropDatabase(databaseName):
     global selectedDatabase
 
@@ -30,6 +45,13 @@ def dropDatabase(databaseName):
 
     return print("Database", databaseName, "deleted.")
 
+
+"""
+useDatabase(databaseName)
+
+- Sets a global variable to store the name of the selected database
+
+"""
 def useDatabase(databaseName):
     global selectedDatabase
     
@@ -37,15 +59,27 @@ def useDatabase(databaseName):
 
     return print("Using database", selectedDatabase)
 
+"""
+createTable(commandArray)
+
+- Creates the file path to the table using the databaseName global variable and the table name
+- Parses the column fields
+- Writes the column fields to the text file
+- Saves/closes the text file
+
+"""
 def createTable(commandArray):
     if not selectedDatabase: return print("No database selected.")
 
     tableName = commandArray[2]
 
+    #   Re-joins the table parameters
     columns = ' '.join(commandArray[3 : len(commandArray)])
 
+    #   Removes the first '(' and last ')' from the string
     columns = columns[1 : -1]
 
+    #   Splits the string by comma, so each column and type is an element in the array
     columns = columns.split(',')
 
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
@@ -54,15 +88,20 @@ def createTable(commandArray):
 
     file = open(path, 'w')
 
+    #   First line of the table's text file
     line = ""
 
     for i in range(len(columns)):
+        #   Create a temp column variable
         column = columns[i]
 
+        #   Remove the beginning space from the column if it exists
         if column[0] == " ": column = column[1 : ]
 
+        #   Append the column to the line
         line += column
 
+        #   If this is not the last element in the array, add a | to the string
         if not i == len(columns) - 1: line += " | "
 
     file.write(line)
@@ -71,6 +110,13 @@ def createTable(commandArray):
 
     return print("Table", tableName, "created.")
 
+""""
+dropTable(tableName)
+
+- Constructs the path to the table using the working directory, database name, and table name
+- If the path exists, deletes the text file
+
+"""
 def dropTable(tableName):
     if not selectedDatabase: return print("No database selected.")
 
@@ -82,11 +128,26 @@ def dropTable(tableName):
 
     return print("Table", tableName, "deleted.")
 
+"""
+selectFromTable(commandArray)
+
+- Handles any command that begins with "SELECT"
+- Calls appropriate function based on following arguments
+
+"""
 def selectFromTable(commandArray):
     if commandArray[1] == "*": return selectAllFromTable(commandArray)
 
     return print("Unknown command.")
 
+"""
+selectAllFromTable(commandArray)
+
+- Called when command begins with "SELECT *"
+- Calculates the path to the database using the current working directory, database name, and table name
+- Reads each line form the text file and prints it to the terminal
+
+"""
 def selectAllFromTable(commandArray):
     if not selectedDatabase: return print("No database selected.")
 
@@ -104,6 +165,13 @@ def selectAllFromTable(commandArray):
 
     return file.close()
 
+"""
+alterTable(commandArray)
+
+- Ensures the path to the table exists
+- Handles any commands related to altering a table
+
+"""
 def alterTable(commandArray):
     if not selectedDatabase: return print("No database selected.")
 
@@ -117,6 +185,12 @@ def alterTable(commandArray):
 
     return print("Invalid command.")
 
+"""
+alterTableAdd(tableName, path, column)
+
+- Appends the column to the first line of the table's text file
+
+"""
 def alterTableAdd(tableName, path, column):
     column = ' '.join(column)
 
@@ -130,6 +204,13 @@ def alterTableAdd(tableName, path, column):
 
     return print("Table", tableName, "modified.")
 
+"""
+CREATE(commandArray)
+
+- Handles commands that begin with "CREATE"
+- Calls handling function for second argument (i.e. "DATABASE", "TABLE", etc.) 
+
+"""
 def CREATE(commandArray):
     if len(commandArray) < 3: return print("Invalid command.")
 
@@ -139,6 +220,13 @@ def CREATE(commandArray):
 
     return print("Invalid command.")
 
+"""
+DROP(commandArray)
+
+- Handles commands that begin with "DROP"
+- Calls handling function for second argument (i.e. "DATABASE", "TABLE", etc.) 
+
+"""
 def DROP(commandArray):
     if len(commandArray) != 3: return print("Invalid command.")
 
@@ -148,6 +236,13 @@ def DROP(commandArray):
 
     return print("Invalid command.")
 
+"""
+USE(commandArray)
+
+- Handles commands that begin with "USE"
+- Ensures that the database exists before calling useDatabase, which sets the global variable
+
+"""
 def USE(commandArray):
     if len(commandArray) != 2: return print("Invalid command.")
     
@@ -155,6 +250,13 @@ def USE(commandArray):
 
     return useDatabase(commandArray[1])
 
+"""
+SELECT(commandArray)
+
+- Handles commands that begin with "SELECT"
+- Calls handling function for third argument (i.e. "FROM" etc.) 
+
+"""
 def SELECT(commandArray):
     if len(commandArray) < 4: return print("Invalid command.")
 
@@ -162,41 +264,67 @@ def SELECT(commandArray):
 
     return print("Invalid command.")
 
+"""
+ALTER(commandArray)
+
+- Handles commands that begin with "ALTER"
+- Calls handling function for second argument (i.e. "TABLE", etc.) 
+
+"""
 def ALTER(commandArray):
     if len(commandArray) < 6: return print("Invalid command.")
 
     if commandArray[1] == 'TABLE': return alterTable(commandArray)
 
+"""
+validateCommand(command)
+
+- Does some generalized checking on the whole command to make sure it's valid before calling any other functions for the command
+
+"""
 def validateCommand(command):
+    #   If the command does not end in ';', it's invalid
     if command[-1] != ';': return False
 
+    #   Remove the ';' from the command
     command = command.replace(';', '')
 
+    #   Split the command by spaces into an array
     commandArray = command.split()
 
+    #   Get the first argument from the command
     functionName = commandArray and commandArray[0]
 
+    #   Make sure the function name is in the list of valid function names
     validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER']
 
+    #   If not valid, return false
     if not validFunctionName: return False
 
+    # If valid, return the command in its array form (split by spaces)
     return commandArray
 
 for command in sys.stdin:
 
+    #   Removes any leading/trailing whitespace from the input
     command = command.strip()
 
+    #   If command is blank or starts with '-', ignore and continue
     if not command or command[0] == '-':
         continue
 
+    #   If command is .EXIT, break loop and end program
     if command == '.EXIT':
         print("All done.")
         break
 
+    #   Validate the command, if valid, split into array by space, otherwise value will be false
     commandArray = validateCommand(command)
 
+    #   If command is invalid, print and wait for next command
     if not commandArray:
         print("Invalid command.")
         continue
 
+    #   Call the handling function for the first command arguement
     globals()[commandArray[0]](commandArray)

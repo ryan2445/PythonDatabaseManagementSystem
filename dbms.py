@@ -53,8 +53,11 @@ def createTable(commandArray):
 
     for i in range(len(columns)):
         column = columns[i]
+
         if column[0] == " ": column = column[1 : ]
+
         line += column
+
         if not i == len(columns) - 1: line += " | "
 
     file.write(line)
@@ -73,6 +76,28 @@ def dropTable(tableName):
     os.remove(path)
 
     return print("Dropped table", tableName)
+
+def selectFromTable(commandArray):
+    if commandArray[1] == "*": return selectAllFromTable(commandArray)
+
+    return print("Unknown command.")
+
+def selectAllFromTable(commandArray):
+    if not selectedDatabase: return print("No database selected.")
+
+    tableName = commandArray[-1]
+
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    if not os.path.exists(path): return print("That table does not exist.")
+
+    file = open(path, 'r')
+
+    allLines = file.readlines()
+
+    for line in allLines: print(line)
+
+    return file.close()
 
 def CREATE(commandArray):
     if len(commandArray) < 3: return print("Invalid command.")
@@ -98,6 +123,16 @@ def USE(commandArray):
     if commandArray[1] not in os.listdir(): return print(commandArray[1], "is not a database.")
 
     return useDatabase(commandArray[1])
+
+def SELECT(commandArray):
+    if len(commandArray) < 4: return print("Invalid command.")
+
+    if "FROM" in commandArray: return selectFromTable(commandArray)
+
+    return print("Invalid command.")
+
+def ALTER(commandArray):
+    if len(commandArray) < 6: return print("Invalid command.")
 
 def validateCommand(command):
     if command[-1] != ';': return False

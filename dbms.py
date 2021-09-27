@@ -16,14 +16,19 @@ createDatabase(databaseName)
 
 """
 def createDatabase(databaseName):
+    # Get current directory path
     path = os.getcwd()
 
+    # Append database name in path
     path += '/' + databaseName
 
+    # Check if path already exists
     if os.path.exists(path): return print("!Failed to create database", databaseName, "because it already exists.")
 
+    # Make the directory
     os.mkdir(path)
 
+    # Print confirmation
     return print("Database", databaseName, "created.")
 
 
@@ -35,18 +40,25 @@ dropDatabase(databaseName)
 
 """
 def dropDatabase(databaseName):
+    # Get the global selectedDatabase variable
     global selectedDatabase
 
+    # Get the current working directory
     path = os.getcwd()
 
+    # Append database name to path
     path += '/' + databaseName
 
+    # Check if the path exists
     if not os.path.exists(path): return print("!Failed to delete database", databaseName, "because it does not exist")
 
+    # Delete the directory and all tables inside
     shutil.rmtree(path)
 
+    # If the selectedDatabase is the database we just deleted, set the selectedDatabase to null
     if selectedDatabase == databaseName: selectedDatabase = None
 
+    # Print confirmation
     return print("Database", databaseName, "deleted.")
 
 
@@ -122,14 +134,19 @@ dropTable(tableName)
 
 """
 def dropTable(tableName):
+    # Don't allow dropping tables without selecting a database
     if not selectedDatabase: return print("No database selected.")
 
+    # Get the path of the table
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    # If the table does not exist, return
     if not os.path.exists(path): return print("!Failed to delete table", tableName, "because it does not exist.")
 
+    # Delete the table's text file
     os.remove(path)
 
+    # Print confirmation
     return print("Table", tableName, "deleted.")
 
 """
@@ -153,20 +170,28 @@ selectAllFromTable(commandArray)
 
 """
 def selectAllFromTable(commandArray):
+    # Don't allow selecting if no database selected
     if not selectedDatabase: return print("No database selected.")
 
+    # Table name will be last command arg
     tableName = commandArray[-1]
 
+    # Get the path of the table
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    # If table doesn't exist, returh
     if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
 
+    # Open the table's text file
     file = open(path, 'r')
 
+    # Read all lines from the file
     allLines = file.readlines()
 
+    # Print each line
     for line in allLines: print(line)
 
+    # Close the file
     return file.close()
 
 """
@@ -177,16 +202,22 @@ alterTable(commandArray)
 
 """
 def alterTable(commandArray):
+    # Don't allow altering table with no database selected
     if not selectedDatabase: return print("No database selected.")
 
+    # Get the table name
     tableName = commandArray[2]
 
+    # Get the table's path
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    #   If table does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
 
+    #   Call function to add fields to table
     if commandArray[3] == "ADD": return alterTableAdd(tableName, path, commandArray[4 : len(commandArray)])
 
+    # Print confirmation
     return print("Invalid command.")
 
 """
@@ -196,16 +227,22 @@ alterTableAdd(tableName, path, column)
 
 """
 def alterTableAdd(tableName, path, column):
+    # Re-join the column field (previously split by space with reset of command)
     column = ' '.join(column)
 
+    # Create the string we will append to the first line in the text file
     addition = " | " + column
 
+    # Open the text file
     file = open(path, 'a')
 
+    # Write the line
     file.write(addition)
 
+    # Close the file
     file.close()
 
+    # Print confirmation
     return print("Table", tableName, "modified.")
 
 """

@@ -308,6 +308,13 @@ def validateCommand(command):
     # If valid, return the command in its array form (split by spaces)
     return commandArray
 
+"""
+Main Code
+
+- Loop to accept standard input commands
+- Parses each command and calls appropriate handling function
+
+"""
 for command in sys.stdin:
 
     #   Removes any leading/trailing whitespace from the input
@@ -330,5 +337,5 @@ for command in sys.stdin:
         print("Invalid command.")
         continue
 
-    #   Call the handling function for the first command arguement
+    #   Call the handling function for the first command arguement (i.e. CREATE calls CREATE function)
     globals()[commandArray[0]](commandArray)

@@ -1,3 +1,7 @@
+#   Ryan Hoffman
+#   CS457 - Database Management Systems
+#   9/27/2021
+
 import os
 import shutil
 import sys

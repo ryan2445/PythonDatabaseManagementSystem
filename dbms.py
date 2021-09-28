@@ -98,32 +98,28 @@ def createTable(commandArray):
     #   Splits the string by comma, so each column and type is an element in the array
     columns = columns.split(',')
 
+    #   Get the path to the table's text file
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    #   If the path does not exist, return
     if os.path.exists(path): return print("!Failed to create table", tableName, "because it already exists.")
 
+    #   Open the text file
     file = open(path, 'w')
 
-    #   First line of the table's text file
-    line = ""
+    #   Remove trailing/leading whitespace from the columns
+    for i in range(len(columns)): columns[i] = columns[i].strip()
 
-    for i in range(len(columns)):
-        #   Create a temp column variable
-        column = columns[i]
+    #   Create the line to write to the text file
+    line = ' | '.join(columns)
 
-        #   Remove the beginning space from the column if it exists
-        if column[0] == " ": column = column[1 : ]
-
-        #   Append the column to the line
-        line += column
-
-        #   If this is not the last element in the array, add a | to the string
-        if not i == len(columns) - 1: line += " | "
-
+    #   Write the line
     file.write(line)
 
+    #   Close the file
     file.close()
 
+    #   Return confirmation
     return print("Table", tableName, "created.")
 
 """"
@@ -189,7 +185,7 @@ def selectAllFromTable(commandArray):
     allLines = file.readlines()
 
     # Print each line
-    for line in allLines: print(line)
+    for line in allLines: print(line, end="")
 
     # Close the file
     return file.close()
@@ -244,6 +240,48 @@ def alterTableAdd(tableName, path, column):
 
     # Print confirmation
     return print("Table", tableName, "modified.")
+
+"""
+insertInto(tableName, params)
+
+
+"""
+def insertInto(tableName, params):
+    # Don't allow inserting in table with no database selected
+    if not selectedDatabase: return print("No database selected.")
+
+    # Get the table's path
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    # If table does not exist, return
+    if not os.path.exists(path): return print("That table does not exist.")
+
+    #   Re-join params that were previously split by space
+    params = ' '.join(params)
+
+    #   Remove 'values(' from beginning of string and ')' from end of string
+    params = params[7 : len(params) - 1]
+
+    #   Split by comma to get each param individually
+    params = params.split(',')
+
+    #   Remove trailing/leading whitespace and any apostrophe characters
+    for i in range(len(params)): params[i] = params[i].strip().replace('\'', '')
+
+    #   Open the file in append mode
+    file = open(path, 'a')
+
+    #   Re-join parameters
+    line = ' | '.join(params)
+
+    #   Write the line
+    file.write('\n' + line)
+
+    #   Close the text file
+    file.close()
+
+    #   Return confirmation
+    return print("1 new record inserted.")
 
 """
 CREATE(commandArray)
@@ -318,6 +356,17 @@ def ALTER(commandArray):
     if commandArray[1] == 'TABLE': return alterTable(commandArray)
 
 """
+insert(commandArray)
+
+
+
+"""
+def insert(commandArray):
+    if len(commandArray) < 4: return print("Invalid command")
+
+    if commandArray[1] == 'into': return insertInto(commandArray[2], commandArray[3 : len(commandArray)])
+
+"""
 validateCommand(command)
 
 - Does some generalized checking on the whole command to make sure it's valid before calling any other functions for the command
@@ -337,7 +386,7 @@ def validateCommand(command):
     functionName = commandArray and commandArray[0]
 
     #   Make sure the function name is in the list of valid function names
-    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER']
+    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert']
 
     #   If not valid, return false
     if not validFunctionName: return False

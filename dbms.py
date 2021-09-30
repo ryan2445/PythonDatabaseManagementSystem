@@ -7,6 +7,7 @@ import shutil
 import sys
 
 selectedDatabase = None
+terminal = ""
 
 """
 createDatabase(databaseName)
@@ -247,9 +248,6 @@ insertInto(tableName, params)
 
 """
 def insertInto(tableName, params):
-    # Don't allow inserting in table with no database selected
-    if not selectedDatabase: return print("No database selected.")
-
     # Get the table's path
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
@@ -362,9 +360,71 @@ insert(commandArray)
 
 """
 def insert(commandArray):
+    # Don't allow inserting in table with no database selected
+    if not selectedDatabase: return print("No database selected.")
+
     if len(commandArray) < 4: return print("Invalid command")
 
     if commandArray[1] == 'into': return insertInto(commandArray[2], commandArray[3 : len(commandArray)])
+
+"""
+update(commandArray)
+
+
+
+"""
+def update(commandArray):
+    if not selectedDatabase: return print("No database selected.")
+
+    if len(commandArray) < 6: return print("Invalid command")
+
+    tableName = commandArray[1]
+
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    if not os.path.exists(path): return print("That table does not exist.")
+
+    file = open(path, 'r')
+
+    headers = file.readline()
+
+    headers = headers.split(' | ')
+
+    setCol = commandArray[3]
+
+    setColIndex = None
+
+    setColVal = commandArray[5].replace('\'', '')
+
+    for i in range(len(headers)):
+        if setCol in headers[i]:
+            setColIndex = i
+            break
+
+    whereCol = commandArray[7]
+
+    whereColIndex = None
+
+    whereColVal = commandArray[9].replace('\'', '')
+
+    for i in range(len(headers)):
+        if whereCol in headers[i]:
+            whereColIndex = i
+            break
+    
+    for line in file:
+        lineArray = line.split(' | ')
+
+        needsUpdate = lineArray[whereColIndex] == whereColVal
+
+        if needsUpdate:
+            toReplace = lineArray[setColIndex]
+
+            line.replace(toReplace, setColVal)
+    
+    file.close()
+
+    return print('success?')
 
 """
 validateCommand(command)
@@ -373,9 +433,6 @@ validateCommand(command)
 
 """
 def validateCommand(command):
-    #   If the command does not end in ';', it's invalid
-    if command[-1] != ';': return False
-
     #   Remove the ';' from the command
     command = command.replace(';', '')
 
@@ -386,7 +443,7 @@ def validateCommand(command):
     functionName = commandArray and commandArray[0]
 
     #   Make sure the function name is in the list of valid function names
-    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert']
+    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert', 'update']
 
     #   If not valid, return false
     if not validFunctionName: return False
@@ -403,20 +460,25 @@ Main Code
 """
 for command in sys.stdin:
 
-    #   Removes any leading/trailing whitespace from the input
-    command = command.strip()
+    terminal += command.replace('\n', '')
 
-    #   If command is blank or starts with '-', ignore and continue
-    if not command or command[0] == '-':
+    if terminal[-1] != ";": continue
+
+    #   If command is blank or starts with '-', reset the terminal input and continue
+    if not terminal or terminal[0] == '-':
+        terminal = ""
         continue
 
     #   If command is .EXIT, break loop and end program
-    if command == '.EXIT':
+    if terminal == '.EXIT':
         print("All done.")
         break
 
     #   Validate the command, if valid, split into array by space, otherwise value will be false
-    commandArray = validateCommand(command)
+    commandArray = validateCommand(terminal)
+
+    #   Reset terminal input after command is entered
+    terminal = ""
 
     #   If command is invalid, print and wait for next command
     if not commandArray:

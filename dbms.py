@@ -273,7 +273,7 @@ def insertInto(tableName, params):
     line = ' | '.join(params)
 
     #   Write the line
-    file.write('\n' + line)
+    file.write(line + '\n')
 
     #   Close the text file
     file.close()
@@ -374,57 +374,100 @@ update(commandArray)
 
 """
 def update(commandArray):
+    #   If no selected database, return
     if not selectedDatabase: return print("No database selected.")
 
+    #   If command is no proper length, return
     if len(commandArray) < 6: return print("Invalid command")
 
+    #   Get the table name
     tableName = commandArray[1]
 
+    #   Get the path to the table's text file inside the database directory
     path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
 
+    #   If the path does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
 
+    #   Open the table's text file in read mode
     file = open(path, 'r')
 
-    headers = file.readline()
+    #   Read all lines from the text file into an array
+    lines = file.readlines()
 
-    headers = headers.split(' | ')
+    #   Close the file
+    file.close()
 
+    #   Split first row (the row containing column names) by ' | '
+    headers = lines[0].split(' | ')
+
+    #   This is the name of the column we're setting
     setCol = commandArray[3]
 
+    #   This is the index of the column in the array of columns for each row
     setColIndex = None
 
+    #   This is the value we are setting the column to
     setColVal = commandArray[5].replace('\'', '')
 
+    #   Find the index of the column name in the array of columns from the first row
     for i in range(len(headers)):
         if setCol in headers[i]:
             setColIndex = i
             break
 
+    #   This is the column name of the 'where' clause
     whereCol = commandArray[7]
 
+    #   This is the index of the column name in the 'where' clause
     whereColIndex = None
 
+    #   This is the value of the column name in the 'where' clause
     whereColVal = commandArray[9].replace('\'', '')
 
+    #   Find the index of the column name from the 'where' clause in the first row
     for i in range(len(headers)):
         if whereCol in headers[i]:
             whereColIndex = i
             break
-    
-    for line in file:
-        lineArray = line.split(' | ')
 
+    #   Init a counter to count how many rows we update
+    recordsModified = 0
+    
+    #   Iterate through each row
+    for i in range(len(lines)):
+        #   Split the row by columns
+        lineArray = lines[i].split(' | ')
+
+        #   Check if the row needs an update
         needsUpdate = lineArray[whereColIndex] == whereColVal
 
+        #   If the row needs an update
         if needsUpdate:
+            #   Get the column value that needs to be replaced
             toReplace = lineArray[setColIndex]
 
-            line.replace(toReplace, setColVal)
+            #   Replace the value in the row and set the row again
+            lines[i] = lines[i].replace(toReplace, setColVal)
+
+            #   Add new line to end
+            if (lines[i][-1] != "\n") and (i != len(lines) - 1) and (i != 0): lines[i] = lines[i] + "\n"
+
+            #   Increment recordsModified
+            recordsModified += 1
     
+    #   Open the same text file, except in write mode this time
+    file = open(path, 'w')
+
+    #   Write the lines back into the text file
+    file.writelines(lines)
+
+    #   Close the text file
     file.close()
 
-    return print('success?')
+    #   Print confirmation
+    confirmation = str(recordsModified) + ' record' + ('s' if recordsModified != 1 else '') + ' modified.'
+    return print(confirmation)
 
 """
 validateCommand(command)
@@ -459,19 +502,24 @@ Main Code
 
 """
 for command in sys.stdin:
+    terminal += command.strip()
 
-    terminal += command.replace('\n', '')
-
-    if terminal[-1] != ";": continue
+    #   If no commnand value, continue
+    if not terminal: continue
 
     #   If command is blank or starts with '-', reset the terminal input and continue
-    if not terminal or terminal[0] == '-':
+    if terminal[0] == '-':
         terminal = ""
+        continue
+
+    #   If terminal doesn't start with ; and doesn't end in a space, add one and continue
+    if terminal[-1] != ";":
+        if terminal[-1] != " ": terminal += " "
         continue
 
     #   If command is .EXIT, break loop and end program
     if terminal == '.EXIT':
-        print("All done.")
+        print("\nAll done.")
         break
 
     #   Validate the command, if valid, split into array by space, otherwise value will be false

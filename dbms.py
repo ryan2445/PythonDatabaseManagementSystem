@@ -118,7 +118,7 @@ def createTable(commandArray):
     line = ' | '.join(columns)
 
     #   Write the line
-    file.write(line)
+    file.write(line + "\n")
 
     #   Close the file
     file.close()
@@ -189,7 +189,7 @@ def selectAllFromTable(commandArray):
     allLines = file.readlines()
 
     # Print each line
-    for line in allLines: print(line, end="")
+    for line in allLines: print(line.strip())
 
     # Close the file
     return file.close()
@@ -234,10 +234,25 @@ def alterTableAdd(tableName, path, column):
     addition = " | " + column
 
     # Open the text file
-    file = open(path, 'a')
+    file = open(path, 'r')
 
-    # Write the line
-    file.write(addition)
+    #   Read all the lines from the file
+    lines = file.readlines()
+
+    #   Close the file
+    file.close()
+
+    #   Remove the trailing \n from the line
+    lines[0] = lines[0].replace("\n", "")
+
+    #   Append the addition
+    lines[0] += addition
+
+    #   Open the file again in write mode this time
+    file = open(path, 'w')
+
+    #   Write the lines back to the file
+    file.writelines(lines)
 
     # Close the file
     file.close()
@@ -276,7 +291,7 @@ def insertInto(tableName, params):
     line = ' | '.join(params)
 
     #   Write the line
-    file.write(line + '\n')
+    file.write(line + "\n")
 
     #   Close the text file
     file.close()
@@ -285,13 +300,13 @@ def insertInto(tableName, params):
     return print("1 new record inserted.")
 
 """
-CREATE(commandArray)
+create(commandArray)
 
-- Handles commands that begin with "CREATE"
+- Handles commands that begin with "create"
 - Calls handling function for second argument (i.e. "DATABASE", "TABLE", etc.) 
 
 """
-def CREATE(commandArray):
+def create(commandArray):
     if len(commandArray) < 3: return print("Invalid command.")
 
     if commandArray[1] == 'DATABASE': return createDatabase(commandArray[2])
@@ -301,13 +316,13 @@ def CREATE(commandArray):
     return print("Invalid command.")
 
 """
-DROP(commandArray)
+drop(commandArray)
 
-- Handles commands that begin with "DROP"
+- Handles commands that begin with "drop"
 - Calls handling function for second argument (i.e. "DATABASE", "TABLE", etc.) 
 
 """
-def DROP(commandArray):
+def drop(commandArray):
     if len(commandArray) != 3: return print("Invalid command.")
 
     if commandArray[1] == 'DATABASE': return dropDatabase(commandArray[2])
@@ -317,13 +332,13 @@ def DROP(commandArray):
     return print("Invalid command.")
 
 """
-USE(commandArray)
+use(commandArray)
 
-- Handles commands that begin with "USE"
+- Handles commands that begin with "use"
 - Ensures that the database exists before calling useDatabase, which sets the global variable
 
 """
-def USE(commandArray):
+def use(commandArray):
     if len(commandArray) != 2: return print("Invalid command.")
     
     if commandArray[1].lower() not in os.listdir(): return print(commandArray[1], "is not a database.")
@@ -331,27 +346,27 @@ def USE(commandArray):
     return useDatabase(commandArray[1])
 
 """
-SELECT(commandArray)
+select(commandArray)
 
-- Handles commands that begin with "SELECT"
+- Handles commands that begin with "select"
 - Calls handling function for third argument (i.e. "FROM" etc.) 
 
 """
-def SELECT(commandArray):
+def select(commandArray):
     if len(commandArray) < 4: return print("Invalid command.")
 
-    if "FROM" in commandArray: return selectFromTable(commandArray)
+    if "FROM" in commandArray or "from" in commandArray: return selectFromTable(commandArray)
 
     return print("Invalid command.")
 
 """
-ALTER(commandArray)
+alter(commandArray)
 
-- Handles commands that begin with "ALTER"
+- Handles commands that begin with "alter"
 - Calls handling function for second argument (i.e. "TABLE", etc.) 
 
 """
-def ALTER(commandArray):
+def alter(commandArray):
     if len(commandArray) < 6: return print("Invalid command.")
 
     if commandArray[1] == 'TABLE': return alterTable(commandArray)
@@ -439,11 +454,14 @@ def update(commandArray):
     
     #   Iterate through each row
     for i in range(len(lines)):
+        #   Skip the first line (contains column names / types)
+        if i == 0: continue
+
         #   Split the row by columns
         lineArray = lines[i].split(' | ')
 
         #   Check if the row needs an update
-        needsUpdate = lineArray[whereColIndex] == whereColVal
+        needsUpdate = lineArray[whereColIndex] = whereColVal
 
         #   If the row needs an update
         if needsUpdate:
@@ -453,8 +471,8 @@ def update(commandArray):
             #   Replace the value in the row and set the row again
             lines[i] = lines[i].replace(toReplace, setColVal)
 
-            #   Add new line to end
-            if (lines[i][-1] != "\n") and (i != len(lines) - 1) and (i != 0): lines[i] = lines[i] + "\n"
+            #   Add a new line to the end if it doesn't have one
+            if lines[i][-1] != "\n": lines[i] += "\n"
 
             #   Increment recordsModified
             recordsModified += 1
@@ -557,8 +575,6 @@ def delete(commandArray):
         if needsUpdate:
             toRemove.append(lines[i])
 
-            if i == len(lines) - 1: lines[i - 1] = lines[i - 1][ : -1]
-
             #   Increment recordsModified
             recordsModified += 1
         
@@ -592,8 +608,14 @@ def validateCommand(command):
     #   Get the first argument from the command
     functionName = commandArray and commandArray[0]
 
+    #   Make function name lowercase
+    functionName = functionName.lower()
+
+    #   Set lower-case version of function name back in commandArray
+    commandArray[0] = functionName
+
     #   Make sure the function name is in the list of valid function names
-    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert', 'update', 'delete']
+    validFunctionName = functionName in ['create', 'drop', 'use', 'select', 'alter', 'insert', 'update', 'delete']
 
     #   If not valid, return false
     if not validFunctionName: return False
@@ -621,7 +643,7 @@ for command in sys.stdin:
 
     #   If command is .EXIT, break loop and end program
     if terminal == '.EXIT':
-        print("\nAll done.")
+        print("All done.")
         break
 
 

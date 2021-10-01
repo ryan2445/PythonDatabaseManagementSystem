@@ -10,6 +10,15 @@ selectedDatabase = None
 terminal = ""
 
 """
+"""
+def getPath(databaseName, tableName = None):
+    path = os.getcwd() + '/' + databaseName.lower()
+
+    if tableName: path += '/' + tableName.lower() + '.txt'
+
+    return path
+
+"""
 createDatabase(databaseName)
 
 - Constructs the path to the database by appending the name of the database to the current working directory
@@ -469,6 +478,110 @@ def update(commandArray):
     confirmation = str(recordsModified) + ' record' + ('s' if recordsModified != 1 else '') + ' modified.'
     return print(confirmation)
 
+def evalCond(left, operator, right, type = 'str'):
+    if type == 'int':
+        left = int(left)
+        right = int(right)
+    elif type == 'float':
+        left = float(left)
+        right = float(right)
+
+    if operator == '=': return left == right
+    elif operator == '<': return left < right
+    elif operator == '>': return left > right
+
+"""
+delete(commandArray)
+
+
+
+"""
+def delete(commandArray):
+    #   If no selected database, return
+    if not selectedDatabase: return print("No database selected.")
+
+    #   If command is no proper length, return
+    if len(commandArray) < 6: return print("Invalid command")
+
+    #   Get the table name
+    tableName = commandArray[2]
+
+    #   Get the path to the table's text file inside the database directory
+    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+
+    #   If the path does not exist, return
+    if not os.path.exists(path): return print("That table does not exist.")
+
+    #   Open the table's text file in read mode
+    file = open(path, 'r')
+
+    #   Read all lines from the text file into an array
+    lines = file.readlines()
+
+    #   Close the file
+    file.close()
+
+    #   Split first row (the row containing column names) by ' | '
+    headers = lines[0].split(' | ')
+    
+    whereColType = None
+
+    #   This is the column name of the 'where' clause
+    whereCol = commandArray[4]
+
+    #   This is the index of the column name in the 'where' clause
+    whereColIndex = None
+
+    whereColCond = commandArray[5]
+
+    #   This is the value of the column name in the 'where' clause
+    whereColVal = commandArray[6].replace('\'', '')
+
+    #   Find the index of the column name from the 'where' clause in the first row
+    for i in range(len(headers)):
+        if whereCol in headers[i]:
+            whereColIndex = i
+            whereColType = headers[i].split()[1]
+            break
+    
+    #   Init a counter to count how many rows we update
+    recordsModified = 0
+
+    toRemove = []
+    
+    #   Iterate through each row
+    for i in range(len(lines)):
+        if i == 0: continue
+
+        #   Split the row by columns
+        lineArray = lines[i].split(' | ')
+
+        #   Check if the row needs an update
+        needsUpdate = evalCond(lineArray[whereColIndex], whereColCond, whereColVal, whereColType)
+
+        #   If the row needs an update
+        if needsUpdate:
+            toRemove.append(lines[i])
+
+            if i == len(lines) - 1: lines[i - 1] = lines[i - 1][ : -1]
+
+            #   Increment recordsModified
+            recordsModified += 1
+        
+    for row in toRemove: lines.remove(row)
+        
+    #   Open the same text file, except in write mode this time
+    file = open(path, 'w')
+
+    #   Write the lines back into the text file
+    file.writelines(lines)
+
+    #   Close the text file
+    file.close()
+    
+    confirmation = str(recordsModified) + ' record' + ('s' if recordsModified != 1 else '') + ' modified.'
+    return print(confirmation)
+
 """
 validateCommand(command)
 
@@ -486,7 +599,7 @@ def validateCommand(command):
     functionName = commandArray and commandArray[0]
 
     #   Make sure the function name is in the list of valid function names
-    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert', 'update']
+    validFunctionName = functionName in ['CREATE', 'DROP', 'USE', 'SELECT', 'ALTER', 'insert', 'update', 'delete']
 
     #   If not valid, return false
     if not validFunctionName: return False

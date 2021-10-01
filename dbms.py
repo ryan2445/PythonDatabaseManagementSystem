@@ -27,10 +27,7 @@ createDatabase(databaseName)
 """
 def createDatabase(databaseName):
     # Get current directory path
-    path = os.getcwd()
-
-    # Append database name in path
-    path += '/' + databaseName
+    path = getPath(databaseName)
 
     # Check if path already exists
     if os.path.exists(path): return print("!Failed to create database", databaseName, "because it already exists.")
@@ -54,10 +51,7 @@ def dropDatabase(databaseName):
     global selectedDatabase
 
     # Get the current working directory
-    path = os.getcwd()
-
-    # Append database name to path
-    path += '/' + databaseName
+    path = getPath(databaseName)
 
     # Check if the path exists
     if not os.path.exists(path): return print("!Failed to delete database", databaseName, "because it does not exist")
@@ -109,7 +103,7 @@ def createTable(commandArray):
     columns = columns.split(',')
 
     #   Get the path to the table's text file
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     #   If the path does not exist, return
     if os.path.exists(path): return print("!Failed to create table", tableName, "because it already exists.")
@@ -144,7 +138,7 @@ def dropTable(tableName):
     if not selectedDatabase: return print("No database selected.")
 
     # Get the path of the table
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     # If the table does not exist, return
     if not os.path.exists(path): return print("!Failed to delete table", tableName, "because it does not exist.")
@@ -183,7 +177,7 @@ def selectAllFromTable(commandArray):
     tableName = commandArray[-1]
 
     # Get the path of the table
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     # If table doesn't exist, returh
     if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
@@ -215,7 +209,7 @@ def alterTable(commandArray):
     tableName = commandArray[2]
 
     # Get the table's path
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     #   If table does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
@@ -258,7 +252,7 @@ insertInto(tableName, params)
 """
 def insertInto(tableName, params):
     # Get the table's path
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     # If table does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
@@ -332,7 +326,7 @@ USE(commandArray)
 def USE(commandArray):
     if len(commandArray) != 2: return print("Invalid command.")
     
-    if commandArray[1] not in os.listdir(): return print(commandArray[1], "is not a database.")
+    if commandArray[1].lower() not in os.listdir(): return print(commandArray[1], "is not a database.")
 
     return useDatabase(commandArray[1])
 
@@ -393,7 +387,7 @@ def update(commandArray):
     tableName = commandArray[1]
 
     #   Get the path to the table's text file inside the database directory
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     #   If the path does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
@@ -507,7 +501,7 @@ def delete(commandArray):
     tableName = commandArray[2]
 
     #   Get the path to the table's text file inside the database directory
-    path = os.getcwd() + '/' + selectedDatabase + '/' + tableName + '.txt'
+    path = getPath(selectedDatabase, tableName)
 
     #   If the path does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
@@ -625,15 +619,16 @@ for command in sys.stdin:
         terminal = ""
         continue
 
-    #   If terminal doesn't start with ; and doesn't end in a space, add one and continue
-    if terminal[-1] != ";":
-        if terminal[-1] != " ": terminal += " "
-        continue
-
     #   If command is .EXIT, break loop and end program
     if terminal == '.EXIT':
         print("\nAll done.")
         break
+
+
+    #   If terminal doesn't start with ; and doesn't end in a space, add one and continue
+    if terminal[-1] != ";":
+        if terminal[-1] != " ": terminal += " "
+        continue
 
     #   Validate the command, if valid, split into array by space, otherwise value will be false
     commandArray = validateCommand(terminal)

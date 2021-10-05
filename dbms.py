@@ -150,18 +150,6 @@ def dropTable(tableName):
     return print("Table", tableName, "deleted.")
 
 """
-selectFromTable(commandArray)
-
-- Handles any command that begins with "SELECT"
-- Calls appropriate function based on following arguments
-
-"""
-def selectFromTable(commandArray):
-    if commandArray[1] == "*": return selectAllFromTable(commandArray)
-
-    return print("Unknown command.")
-
-"""
 selectAllFromTable(commandArray)
 
 - Called when command begins with "SELECT *"
@@ -353,11 +341,77 @@ select(commandArray)
 
 """
 def select(commandArray):
+    if not selectedDatabase: return print("No database selected.")
+
     if len(commandArray) < 4: return print("Invalid command.")
 
-    if "FROM" in commandArray or "from" in commandArray: return selectFromTable(commandArray)
+    if commandArray[1] == "*": return selectAllFromTable(commandArray)
 
-    return print("Invalid command.")
+    fromIndex = commandArray.index("from")
+
+    selectedCols = commandArray[1 : fromIndex]
+
+    selectedColsIndexes = []
+
+    for i in range(len(selectedCols)): selectedCols[i] = selectedCols[i].replace(',', '').strip()
+
+    tableName = commandArray[fromIndex + 1]
+
+    path = getPath(selectedDatabase, tableName)
+
+    if not os.path.exists(path): return print("That database or table name does not exist.")
+
+    file = open(path)
+
+    lines = file.readlines()
+
+    file.close()
+
+    #   Split first row (the row containing column names) by ' | '
+    headers = lines[0].split(' | ')
+
+    for i in range(len(headers)):
+        for j in range(len(selectedCols)):
+            if selectedCols[j] in headers[i]: selectedColsIndexes.append(i)
+
+    whereIndex = commandArray.index("where")
+
+    #   This is the column name of the 'where' clause
+    whereCol = commandArray[whereIndex + 1]
+
+    #   Conditon operator in the where statement
+    whereColCond = commandArray[whereIndex + 2]
+
+    #   This is the value of the column name in the 'where' clause
+    whereColVal = commandArray[whereIndex + 3].replace('\'', '')
+
+    #   This is the index of the column name in the 'where' clause
+    whereColIndex = None
+
+    whereColType = None
+
+    #   Find the index of the column name from the 'where' clause in the first row
+    for i in range(len(headers)):
+        if whereCol in headers[i]:
+            whereColIndex = i
+            whereColType = headers[i].split()[1]
+            break
+    
+    #   Iterate through each row
+    for i in range(len(lines)):
+        #   Split the row by columns
+        lineArray = lines[i].split(' | ')
+
+        shouldPrint = i == 0 or evalCond(lineArray[whereColIndex], whereColCond, whereColVal, whereColType)
+
+        if not shouldPrint: continue
+
+        toPrint = []
+
+        for i in range(len(selectedColsIndexes)):
+            toPrint.append(lineArray[selectedColsIndexes[i]].strip())
+
+        print(' | '.join(toPrint))
 
 """
 alter(commandArray)
@@ -501,6 +555,7 @@ def evalCond(left, operator, right, type = 'str'):
     if operator == '=': return left == right
     elif operator == '<': return left < right
     elif operator == '>': return left > right
+    elif operator == '!=': return left != right
 
 """
 delete(commandArray)

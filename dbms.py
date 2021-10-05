@@ -515,7 +515,7 @@ def update(commandArray):
         lineArray = lines[i].split(' | ')
 
         #   Check if the row needs an update
-        needsUpdate = lineArray[whereColIndex] = whereColVal
+        needsUpdate = lineArray[whereColIndex] == whereColVal
 
         #   If the row needs an update
         if needsUpdate:
@@ -644,7 +644,7 @@ def delete(commandArray):
     #   Close the text file
     file.close()
     
-    confirmation = str(recordsModified) + ' record' + ('s' if recordsModified != 1 else '') + ' modified.'
+    confirmation = str(recordsModified) + ' record' + ('s' if recordsModified != 1 else '') + ' deleted.'
     return print(confirmation)
 
 """
@@ -697,7 +697,7 @@ for command in sys.stdin:
         continue
 
     #   If command is .EXIT, break loop and end program
-    if terminal == '.EXIT':
+    if terminal.lower() == '.exit':
         print("All done.")
         break
 

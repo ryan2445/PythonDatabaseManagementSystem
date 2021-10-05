@@ -10,12 +10,19 @@ selectedDatabase = None
 terminal = ""
 
 """
+getPath(databaseName, tableName)
+
+-   Returns a path to the specified database or table
+
 """
 def getPath(databaseName, tableName = None):
+    #   Get the path by combining the current workign directory with the database name
     path = os.getcwd() + '/' + databaseName.lower()
 
+    #   If a table name is specified, append table to name to path
     if tableName: path += '/' + tableName.lower() + '.txt'
 
+    #   Return the path
     return path
 
 """
@@ -251,6 +258,7 @@ def alterTableAdd(tableName, path, column):
 """
 insertInto(tableName, params)
 
+-   Adds a new row to the table
 
 """
 def insertInto(tableName, params):
@@ -336,44 +344,61 @@ def use(commandArray):
 """
 select(commandArray)
 
-- Handles commands that begin with "select"
-- Calls handling function for third argument (i.e. "FROM" etc.) 
+-   Handles commands that begin with "select"
+-   If using 'select *', calls selectAllFromTable(commandArray) function
+-   Otherwise, handles filtered select statement by only selecting/printing specified columns that match the condition
 
 """
 def select(commandArray):
+    #   If no selectedDatabase, return
     if not selectedDatabase: return print("No database selected.")
 
+    #   If command arguments not greater than 4, command is invalid
     if len(commandArray) < 4: return print("Invalid command.")
 
+    #   If using 'select *', call a different function to print all rows/columns
     if commandArray[1] == "*": return selectAllFromTable(commandArray)
 
+    #   Get the index of the word "from" in the command
     fromIndex = commandArray.index("from")
 
+    #   The column names we are selected will start at index 1 and end right before the fromIndex
     selectedCols = commandArray[1 : fromIndex]
 
-    selectedColsIndexes = []
-
+    #   Remove any whitespace or commas from each selected columns
     for i in range(len(selectedCols)): selectedCols[i] = selectedCols[i].replace(',', '').strip()
 
+    #   Init an array to store the column indexes of the columns that are selected
+    selectedColsIndexes = []
+
+    #   Pull the table name form the commandArray
     tableName = commandArray[fromIndex + 1]
 
+    #   Calculate the path to the table using the selected database and the table name
     path = getPath(selectedDatabase, tableName)
 
+    #   If the path does not exist, return
     if not os.path.exists(path): return print("That database or table name does not exist.")
 
+    #   Open the file
     file = open(path)
 
+    #   Read all the lines from the file
     lines = file.readlines()
 
+    #   Close the file
     file.close()
 
     #   Split first row (the row containing column names) by ' | '
     headers = lines[0].split(' | ')
 
+    #   Find the index in the headers array of each of the selected column names
+    #   This will be used to get values from the following rows
     for i in range(len(headers)):
         for j in range(len(selectedCols)):
             if selectedCols[j] in headers[i]: selectedColsIndexes.append(i)
 
+    #   Get the index of the word "where" in the command arguments
     whereIndex = commandArray.index("where")
 
     #   This is the column name of the 'where' clause
@@ -388,6 +413,7 @@ def select(commandArray):
     #   This is the index of the column name in the 'where' clause
     whereColIndex = None
 
+    #   This is the 'type' of the whereColIndex value
     whereColType = None
 
     #   Find the index of the column name from the 'where' clause in the first row
@@ -402,15 +428,20 @@ def select(commandArray):
         #   Split the row by columns
         lineArray = lines[i].split(' | ')
 
+        #   Print if it's the first row or the 'where' condition is satisfied
         shouldPrint = i == 0 or evalCond(lineArray[whereColIndex], whereColCond, whereColVal, whereColType)
 
+        #   If above condition is not satisfied, continue
         if not shouldPrint: continue
 
+        #   Init an array of values to print for the line
         toPrint = []
 
+        #   Add each selectedColumn value from the row to the array of values to print
         for i in range(len(selectedColsIndexes)):
             toPrint.append(lineArray[selectedColsIndexes[i]].strip())
 
+        #   Re-join the values and print the row to the terminal
         print(' | '.join(toPrint))
 
 """
@@ -442,7 +473,8 @@ def insert(commandArray):
 """
 update(commandArray)
 
-
+-   Change a value of a column in a table
+-   Reads the lines, modifies the necessary values, and writes them back to the text file
 
 """
 def update(commandArray):
@@ -560,7 +592,7 @@ def evalCond(left, operator, right, type = 'str'):
 """
 delete(commandArray)
 
-
+-   Removes a row from the table
 
 """
 def delete(commandArray):

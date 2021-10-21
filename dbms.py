@@ -1,6 +1,6 @@
-#   Ryan Hoffman
+#   Ryan Hoffman - 8001139126
 #   CS457 - Database Management Systems
-#   9/27/2021
+#   10/21/2021
 
 import os
 import shutil
@@ -98,6 +98,19 @@ createTable(commandArray)
 def createTable(commandArray):
     if not selectedDatabase: return print("No database selected.")
 
+    #   Re-join the command
+    commandArray = " ".join(commandArray)
+
+    #   Find the index of the first parenthesis
+    parenIndex = commandArray.index("(")
+
+    #   Add a space between the parenthesis and the table name
+    commandArray = commandArray[:parenIndex] + " " + commandArray[parenIndex:]
+
+    #   Re-split the command and proceed with normal handling
+    commandArray = commandArray.split(" ")
+
+    #   Get the name of the table
     tableName = commandArray[2]
 
     #   Re-joins the table parameters
@@ -165,8 +178,8 @@ selectAllFromTable(commandArray)
 
 """
 def selectAllFromTable(commandArray):
-    # Don't allow selecting if no database selected
-    if not selectedDatabase: return print("No database selected.")
+    #   Handle selecting from multiple tables with a join
+    if len(commandArray) > 4: return selectAllFromTwoTables(commandArray)
 
     # Table name will be last command arg
     tableName = commandArray[-1]
@@ -188,6 +201,131 @@ def selectAllFromTable(commandArray):
 
     # Close the file
     return file.close()
+
+"""
+selectAllFromTwoTables(commandArray)
+
+- Reads lines from 2 different tables
+- Evalues the condition on columns from 2 different tables
+- Uses a nested for loop to check each value from the first table against the second
+- Prints the all the columns from the joined tables that make the condition true (unless outer join is specified)
+
+"""
+def selectAllFromTwoTables(commandArray):
+    #   Remove any commas and semicolons from the command parameters
+    for i in range(len(commandArray)): commandArray[i] = commandArray[i].replace(",", "").replace(";", "")
+
+    #   Check if the select is an outer join by looking for the word "outer"
+    isOuterJoin = "outer" in commandArray
+
+    #   Check if the select is a left outer join by checking for "outer" and "left"
+    isLeftOuterJoin = isOuterJoin and "left" in commandArray
+
+    #   Get the index of "from" from the array of commands
+    fromIndex = commandArray.index("from")
+
+    #   Get the name of the first table
+    table1Name = commandArray[fromIndex + 1]
+
+    #   The index position of the second table name depends on the type of join and other parameters in the command
+    if commandArray[fromIndex + 3] == 'inner': table2Name = commandArray[fromIndex + 5]
+    elif commandArray[fromIndex + 3] == 'left': table2Name = commandArray[fromIndex + 6]
+    else: table2Name = commandArray[fromIndex + 3]
+
+    #   Find the index of the "where" or "or" keyword (both mean the same thing in this case)
+    try: condIndex = commandArray.index("where")
+    except: condIndex = commandArray.index("on")
+
+    #   Get the column name of the left hand side of the "where" condition
+    table1CondVar = commandArray[condIndex + 1].split(".")[1]
+
+    #   Get the column name of the right hand side of the "where" condition
+    table2CondVar = commandArray[condIndex + 3].split(".")[1]
+
+    #   Get the operator of the "where" condition
+    operator = commandArray[condIndex + 2]
+
+    #   Get the file path to the first table
+    table1Path = getPath(selectedDatabase, table1Name)
+
+    #   Open the file
+    table1File = open(table1Path, 'r')
+
+    #   Read all the lines from the file
+    table1Rows = table1File.readlines()
+
+    #   Close the file
+    table1File.close()
+
+    #   Get the path to the second table's file
+    table2Path = getPath(selectedDatabase, table2Name)
+
+    #   Open the second table's file
+    table2File = open(table2Path, 'r')
+
+    #   Read all the lines from the second table's file
+    table2Rows = table2File.readlines()
+
+    #   Close the second table's file
+    table2File.close()
+
+    #   Get an array of the columns from the first table
+    table1Cols = table1Rows[0].split(" | ")
+
+    #   Find the index in the array of columns that matches the column from the "where" condition
+    for i in range(len(table1Cols)):
+        table1ColName = table1Cols[i].split(" ")[0]
+        table1ColType = table1Cols[i].split(" ")[1]
+        if table1ColName == table1CondVar:
+            table1CondVarIndex = i
+            table1CondVarType = table1ColType
+            break
+    
+    #   Get an array of the columns from the second table
+    table2Cols = table2Rows[0].split(" | ")
+
+    #   Find the index in the array of columns that matches the column from the "where" condition
+    for i in range(len(table2Cols)):
+        table2ColName = table2Cols[i].split(" ")[0]
+        table2ColType = table2Cols[i].split(" ")[1]
+        if table2ColName == table2CondVar:
+            table2CondVarIndex = i
+            table2CondVarType = table2ColType
+            break
+
+    #   Concatenate the columns of both tables
+    colJoin = table1Rows[0].replace("\n", "") + " | " + table2Rows[0].replace("\n", "")
+
+    #   Create a variable that holds the lines we will print
+    shouldPrint = [colJoin]
+
+    #   Iterate through each row in the first table,
+    #   then for each row in the second table,
+    #   check if the condition is true when evaluating the column from the first table
+    #   with the value from the second table.
+    #   Then, for each row in the first table, check if there was a match
+    #   with any row from the second table,
+    #   If not and it's a left outer join, we still print the row from the first table,
+    #   and print null (empty) values for the second table
+    for i in range(len(table1Rows)):
+        if i == 0: continue
+        foundMatch = False
+        table1RowSplit = table1Rows[i].split(" | ")
+        for j in range(len(table2Rows)):
+            if j == 0: continue
+            table2RowSplit = table2Rows[j].split(" | ")
+            if evalCond(table1RowSplit[table1CondVarIndex], operator, table2RowSplit[table2CondVarIndex], table1CondVarType):
+                shouldPrint.append(table1Rows[i].replace("\n", "") + " | " + table2Rows[j].replace("\n", ""))
+                foundMatch = True
+        
+        if isLeftOuterJoin and not foundMatch:
+                toPrint = table1Rows[i].replace("\n", "")
+                for k in range(len(table2Cols)): toPrint += " | "
+                shouldPrint.append(toPrint)
+
+    #   Print each line we added to the array from above
+    for line in shouldPrint: print(line)
+
 
 """
 alterTable(commandArray)
@@ -305,9 +443,9 @@ create(commandArray)
 def create(commandArray):
     if len(commandArray) < 3: return print("Invalid command.")
 
-    if commandArray[1] == 'DATABASE': return createDatabase(commandArray[2])
+    if commandArray[1].lower() == 'database': return createDatabase(commandArray[2])
 
-    if len(commandArray) > 4 and commandArray[1] == 'TABLE': return createTable(commandArray)
+    if len(commandArray) > 4 and commandArray[1].lower() == 'table': return createTable(commandArray)
 
     return print("Invalid command.")
 

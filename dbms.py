@@ -5,9 +5,21 @@
 import os
 import shutil
 import sys
+import uuid
 
 selectedDatabase = None
 terminal = ""
+
+transactionId = None
+transactions = {}
+
+def begin(commandArray):
+    global transactionId
+    
+    transactionId = str(uuid.uuid4())
+
+def commit(commandArray):
+    print('commit')
 
 """
 getPath(databaseName, tableName)
@@ -24,6 +36,32 @@ def getPath(databaseName, tableName = None):
 
     #   Return the path
     return path
+
+def tableLocked(tableName):
+    path = os.getcwd() + "/lockedTables.txt"
+
+    if not os.path.exists(path):
+        file = open(path, "w")
+
+        file.close()
+
+    file = open(path, "r")
+
+    tables = file.readlines()
+
+    for table in tables:
+        if tableName == table:
+            return True
+
+    tables.append(tableName)
+
+    file = open(path, "w")
+
+    file.writelines(tables)
+
+    file.close()
+    
+    return False
 
 """
 createDatabase(databaseName)
@@ -105,7 +143,8 @@ def createTable(commandArray):
     parenIndex = commandArray.index("(")
 
     #   Add a space between the parenthesis and the table name
-    commandArray = commandArray[:parenIndex] + " " + commandArray[parenIndex:]
+    if commandArray[parenIndex - 1] != " ":
+        commandArray = commandArray[:parenIndex] + " " + commandArray[parenIndex:]
 
     #   Re-split the command and proceed with normal handling
     commandArray = commandArray.split(" ")
@@ -409,8 +448,15 @@ def insertInto(tableName, params):
     #   Re-join params that were previously split by space
     params = ' '.join(params)
 
+    #   Find the index of the first parenthesis
+    parenIndex = params.index("(")
+
+    #   Add a space between the parenthesis and the table name
+    if params[parenIndex - 1] != " ":
+        params = params[:parenIndex] + " " + params[parenIndex:]
+
     #   Remove 'values(' from beginning of string and ')' from end of string
-    params = params[7 : len(params) - 1]
+    params = params[8 : len(params) - 1]
 
     #   Split by comma to get each param individually
     params = params.split(',')
@@ -628,8 +674,21 @@ def update(commandArray):
     #   Get the path to the table's text file inside the database directory
     path = getPath(selectedDatabase, tableName)
 
+    newPath = None
+
     #   If the path does not exist, return
     if not os.path.exists(path): return print("That table does not exist.")
+
+    #   Handle pending transactions
+    global transactionId
+    global transactions
+
+    if transactionId:
+        if tableLocked(tableName): return print("Error: Table", tableName, "is locked!")
+
+        newPath = getPath(selectedDatabase, tableName + transactionId)
+
+        transactions[path] = newPath
 
     #   Open the table's text file in read mode
     file = open(path, 'r')
@@ -702,7 +761,7 @@ def update(commandArray):
             recordsModified += 1
     
     #   Open the same text file, except in write mode this time
-    file = open(path, 'w')
+    file = open(newPath if newPath else path, 'w')
 
     #   Write the lines back into the text file
     file.writelines(lines)
@@ -840,7 +899,7 @@ def validateCommand(command):
     commandArray[0] = functionName
 
     #   Make sure the function name is in the list of valid function names
-    validFunctionName = functionName in ['create', 'drop', 'use', 'select', 'alter', 'insert', 'update', 'delete']
+    validFunctionName = functionName in ['create', 'drop', 'use', 'select', 'alter', 'insert', 'update', 'delete', 'begin', 'commit']
 
     #   If not valid, return false
     if not validFunctionName: return False

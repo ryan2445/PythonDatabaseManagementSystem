@@ -13,13 +13,82 @@ terminal = ""
 transactionId = None
 transactions = {}
 
+"""
+begin(commandArray)
+
+-   Function used to begin a transaction
+-   Sets a unique id for the process to operate under
+"""
 def begin(commandArray):
+    #   Get the process' transaction id global variable
     global transactionId
     
+    #   Set the process' trasaction id global variable
     transactionId = str(uuid.uuid4())
 
+    #   Print the confirmation
+    return print("Transaction starts.")
+
+"""
+commit(commandArray)
+
+-   Function used to commit transactions
+-   Deletes the old file before the transaction and renames the new file
+    with the updated data to the old file's name
+"""
 def commit(commandArray):
-    print('commit')
+    #   Get global transaction variables
+    global transactionId
+    global transactions
+
+    #   If there are no transactions to commit, do nothing
+    if len(transactions) == 0:
+        return print("Transaction abort.")
+
+    #   Handle each transaction
+    for oldPath, newPath in transactions.items():
+        #   Remove the old file before the transaction
+        os.remove(oldPath)
+
+        #   Rename the file with the updated data to the old file's name
+        os.rename(newPath, oldPath)
+
+    #   Open the locked tables file
+    lockedTablesFile = open(os.getcwd() + "/lockedTables.txt", "r")
+
+    #   Get all the locked tables
+    lockedTables = lockedTablesFile.readlines()
+
+    #   Create an array of tables to unlock
+    toRemove = []
+
+    #   Iterate through transaction
+    for oldPath, newPath in transactions.items():
+        #   If the transaction table is in the locked tables
+        if os.path.basename(oldPath)[ : -4] in lockedTables:
+            #   Add the table to the array of tables to be unlocked
+            toRemove.append(os.path.basename(oldPath)[ : -4])
+
+    #   Iterate through all tables to be unlocked
+    for table in toRemove:
+        #   Remove the table from the locked array
+        lockedTables.remove(table)
+    
+    #   Open the locked tables file again in write mode
+    lockedTablesFile = open(os.getcwd() + "/lockedTables.txt", "w")
+
+    #   Write the updated list of locked tables to the file
+    lockedTablesFile.writelines(lockedTables)
+
+    #   Close the locked tables file
+    lockedTablesFile.close()
+
+    #   Reset the transaction id and transactions dictionary
+    transactionId = None
+    transactions = {}
+
+    #   Print transaction commit confirmation
+    return print("Transaction committed.")
 
 """
 getPath(databaseName, tableName)
@@ -683,11 +752,15 @@ def update(commandArray):
     global transactionId
     global transactions
 
+    #   If a transaction is started
     if transactionId:
+        #   Check if the table is locked or add to lockedTables.txt file
         if tableLocked(tableName): return print("Error: Table", tableName, "is locked!")
 
+        #   Create a path for a temporary file with the updated data from the transaction
         newPath = getPath(selectedDatabase, tableName + transactionId)
 
+        #   Set a key/value in the dictionary with the key being the original file path and the value being the temporary file path
         transactions[path] = newPath
 
     #   Open the table's text file in read mode
@@ -761,6 +834,8 @@ def update(commandArray):
             recordsModified += 1
     
     #   Open the same text file, except in write mode this time
+    #   If a transaction is in progress, write to the temp file
+    #   Else write to the original file
     file = open(newPath if newPath else path, 'w')
 
     #   Write the lines back into the text file

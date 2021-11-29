@@ -278,6 +278,151 @@ def dropTable(tableName):
     return print("Table", tableName, "deleted.")
 
 """
+countFromTable(commandArray)
+
+
+"""
+def countFromTable(commandArray):
+    # Table name will be last command arg
+    tableName = commandArray[-1]
+
+    # Get the path of the table
+    path = getPath(selectedDatabase, tableName)
+
+    # If table doesn't exist, returh
+    if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
+
+    # Open the table's text file
+    file = open(path, 'r')
+
+    # Read all lines from the file
+    allLines = file.readlines()
+
+    #   Close the file
+    file.close()
+
+    #   The number of items is the amount of lines from the table minus 1 for the column headers
+    return print("COUNT(*)\n" + str(len(allLines) - 1))
+
+"""
+avgFromTable(commandArray)
+
+
+"""
+def avgFromTable(commandArray):
+    # Table name will be last command arg
+    tableName = commandArray[-1]
+
+    # Get the path of the table
+    path = getPath(selectedDatabase, tableName)
+
+    # If table doesn't exist, returh
+    if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
+
+    # Open the table's text file
+    file = open(path, 'r')
+
+    # Read all lines from the file
+    allLines = file.readlines()
+
+    #   Close the file
+    file.close()
+
+    #   Find the column from the table that we are getting the average of
+    column = commandArray[1][4 : -1]
+
+    #   Pull the headers from the table
+    headers = allLines[0]
+
+    #   Split the headers into an array
+    headers = headers.split(" | ")
+
+    #   Initialize an index for the index of the column from the command input
+    colIndex = -1
+
+    #   Go through each header, find the index of the column from the command input
+    for i in range(len(headers)):
+        if headers[i].startswith(column): colIndex = i
+
+    #   Initialize a sum variable for the sum of all column values
+    sum = 0
+    
+    #   Iterate through each line, adding the column value to the sum
+    for i in range(len(allLines)):
+        if i == 0: continue
+
+        line = allLines[i]
+
+        line = line.split(" | ")
+
+        sum += float(line[colIndex])
+
+    #   Divide the sum by the number of values we added together to get the average
+    average = sum / (len(allLines) - 1)
+
+    #   Print the average
+    return print("AVG(" + column + ")\n" + str(average))
+
+"""
+maxFromTable(commandArray)
+
+
+"""
+def maxFromTable(commandArray):
+    # Table name will be last command arg
+    tableName = commandArray[-1]
+
+    # Get the path of the table
+    path = getPath(selectedDatabase, tableName)
+
+    # If table doesn't exist, returh
+    if not os.path.exists(path): return print("!Failed to query table", tableName, "because it does not exist.")
+
+    # Open the table's text file
+    file = open(path, 'r')
+
+    # Read all lines from the file
+    allLines = file.readlines()
+
+    #   Close the file
+    file.close()
+
+    #   Find the column from the table that we are getting the average of
+    column = commandArray[1][4 : -1]
+
+    #   Pull the headers from the table
+    headers = allLines[0]
+
+    #   Split the headers into an array
+    headers = headers.split(" | ")
+
+    #   Initialize an index for the index of the column from the command input
+    colIndex = -1
+
+    #   Go through each header, find the index of the column from the command input
+    for i in range(len(headers)):
+        if headers[i].startswith(column): colIndex = i
+
+    #   Initialize a sum variable for the sum of all column values
+    max = 0
+    
+    #   Iterate through each line, checking if each value is bigger than the max
+    #   If the value is bigger than the max, replace the max with the value
+    for i in range(len(allLines)):
+        if i == 0: continue
+
+        line = allLines[i]
+
+        line = line.split(" | ")
+
+        val = int(line[colIndex])
+
+        if val > max: max = val
+
+    #   Print the average
+    return print("MAX(" + column + ")\n" + str(max))
+
+"""
 selectAllFromTable(commandArray)
 
 - Called when command begins with "SELECT *"
@@ -609,6 +754,15 @@ def select(commandArray):
     #   If command arguments not greater than 4, command is invalid
     if len(commandArray) < 4: return print("Invalid command.")
 
+    #   If the command uses the COUNT() function, call the handling function
+    if commandArray[1].lower().startswith('count'): return countFromTable(commandArray)
+
+    #   If the command uses the AVG() function, call the handling function
+    if commandArray[1].lower().startswith('avg'): return avgFromTable(commandArray)
+
+    #   If the command uses the MAX() function, call the handling function
+    if commandArray[1].lower().startswith('max'): return maxFromTable(commandArray)
+
     #   If using 'select *', call a different function to print all rows/columns
     if commandArray[1] == "*": return selectAllFromTable(commandArray)
 
@@ -721,7 +875,7 @@ def insert(commandArray):
 
     if len(commandArray) < 4: return print("Invalid command")
 
-    if commandArray[1] == 'into': return insertInto(commandArray[2], commandArray[3 : len(commandArray)])
+    if commandArray[1].lower() == 'into': return insertInto(commandArray[2], commandArray[3 : len(commandArray)])
 
 """
 update(commandArray)

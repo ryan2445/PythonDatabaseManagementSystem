@@ -1,6 +1,6 @@
 #   Ryan Hoffman - 8001139126
 #   CS457 - Database Management Systems
-#   10/21/2021
+#   11/29/2021
 
 import os
 import shutil
@@ -280,6 +280,7 @@ def dropTable(tableName):
 """
 countFromTable(commandArray)
 
+-   Returns the number of rows for a given table
 
 """
 def countFromTable(commandArray):
@@ -307,6 +308,7 @@ def countFromTable(commandArray):
 """
 avgFromTable(commandArray)
 
+-   Returns the average value of a given column for a given table (assuming integers or floats)
 
 """
 def avgFromTable(commandArray):
@@ -366,6 +368,7 @@ def avgFromTable(commandArray):
 """
 maxFromTable(commandArray)
 
+-   Returns the maximum value of a given column for a given table (assuming integers)
 
 """
 def maxFromTable(commandArray):
